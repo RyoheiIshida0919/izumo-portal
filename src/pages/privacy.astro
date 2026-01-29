@@ -1,0 +1,72 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumb from '../components/common/Breadcrumb.astro';
+import { SITE_NAME } from '../lib/constants';
+
+const pageTitle = 'プライバシーポリシー';
+const pageDescription = `${SITE_NAME}のプライバシーポリシーです。`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb items={[{ label: pageTitle }]} />
+
+    <article class="bg-white rounded-xl shadow-sm p-6 lg:p-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
+
+      <div class="prose prose-gray max-w-none">
+        <p>
+          {SITE_NAME}（以下「当サイト」）は、利用者のプライバシーを尊重し、個人情報の保護に努めます。
+          本プライバシーポリシーは、当サイトにおける個人情報の取り扱いについて説明します。
+        </p>
+
+        <h2>1. 収集する情報</h2>
+        <p>当サイトでは、以下の情報を収集する場合があります。</p>
+        <ul>
+          <li>お問い合わせフォームにご入力いただく情報（氏名、メールアドレス等）</li>
+          <li>アクセス解析ツールによる閲覧情報（IPアドレス、ブラウザ情報等）</li>
+        </ul>
+
+        <h2>2. 情報の利用目的</h2>
+        <p>収集した情報は、以下の目的で利用します。</p>
+        <ul>
+          <li>お問い合わせへの回答</li>
+          <li>サービスの改善</li>
+          <li>統計データの作成</li>
+        </ul>
+
+        <h2>3. 情報の第三者提供</h2>
+        <p>
+          当サイトは、法令に基づく場合を除き、ご本人の同意なく個人情報を第三者に提供することはありません。
+        </p>
+
+        <h2>4. Cookieの使用</h2>
+        <p>
+          当サイトでは、利用状況の把握やサービス向上のためにCookieを使用する場合があります。
+          ブラウザの設定によりCookieを無効にすることも可能ですが、一部機能が制限される場合があります。
+        </p>
+
+        <h2>5. アクセス解析ツール</h2>
+        <p>
+          当サイトでは、Googleアナリティクス等のアクセス解析ツールを使用する場合があります。
+          これらのツールはCookieを使用して情報を収集しますが、個人を特定する情報は含まれません。
+        </p>
+
+        <h2>6. プライバシーポリシーの変更</h2>
+        <p>
+          当サイトは、必要に応じて本プライバシーポリシーを変更することがあります。
+          変更後のプライバシーポリシーは、当サイトに掲載した時点で効力を生じます。
+        </p>
+
+        <h2>7. お問い合わせ</h2>
+        <p>
+          本プライバシーポリシーに関するお問い合わせは、<a href="/contact">お問い合わせページ</a>よりお願いいたします。
+        </p>
+
+        <p class="text-sm text-gray-500 mt-8">
+          制定日: 2024年1月1日
+        </p>
+      </div>
+    </article>
+  </div>
+</BaseLayout>

@@ -1,0 +1,192 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SearchBox from '../components/search/SearchBox.astro';
+import SearchFilters from '../components/search/SearchFilters.astro';
+import Button from '../components/common/Button.astro';
+import ServiceCard from '../components/cards/ServiceCard.astro';
+import EventCard from '../components/cards/EventCard.astro';
+import CategoryCard from '../components/cards/CategoryCard.astro';
+import { categories } from '../content/_meta/categories';
+import { sortByNewest, isUpcoming } from '../lib/utils';
+
+const allServices = await getCollection('services');
+const allEvents = await getCollection('events');
+
+// 注目サービス
+const featuredServices = allServices
+  .filter((s) => s.data.isFeatured)
+  .slice(0, 4);
+
+// 最新サービス
+const latestServices = sortByNewest(
+  allServices.map((s) => ({ ...s.data, id: s.id }))
+).slice(0, 4);
+
+// 近日開催イベント
+const upcomingEvents = allEvents
+  .filter((e) => isUpcoming(e.data.startAt))
+  .sort((a, b) => new Date(a.data.startAt).getTime() - new Date(b.data.startAt).getTime())
+  .slice(0, 4);
+
+// カテゴリ別件数
+const categoryCounts = categories.map((cat) => ({
+  ...cat,
+  count: allServices.filter((s) => s.data.categories.includes(cat.id)).length,
+}));
+---
+
+<BaseLayout>
+  <!-- ヒーローセクション -->
+  <section class="bg-gradient-to-br from-primary-500 to-primary-600 text-white py-16 lg:py-24">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl lg:text-5xl font-bold mb-4">
+          出雲市の子育て情報を<br class="sm:hidden" />もっと身近に
+        </h1>
+        <p class="text-lg lg:text-xl text-primary-100 max-w-2xl mx-auto">
+          子連れで行けるお店、習い事、病院、公園など<br />
+          出雲市の子育て情報をまとめて検索できます
+        </p>
+      </div>
+
+      <form action="/services" method="get" class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl shadow-lg p-4 lg:p-6">
+          <div class="mb-4">
+            <SearchBox placeholder="キーワードで検索（例：カフェ、習い事、公園）" size="lg" />
+          </div>
+          <SearchFilters showSubcategory={false} showTargetAge={false} />
+          <div class="mt-4 text-center">
+            <Button type="submit" size="lg">検索する</Button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- カテゴリセクション -->
+  <section class="py-12 lg:py-16">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-2xl font-bold text-gray-900">カテゴリから探す</h2>
+        <a href="/categories" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+          すべて見る →
+        </a>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {categoryCounts.map((cat) => (
+          <CategoryCard
+            id={cat.id}
+            name={cat.name}
+            icon={cat.icon}
+            description={cat.description}
+            count={cat.count}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 注目サービス -->
+  {featuredServices.length > 0 && (
+    <section class="py-12 lg:py-16 bg-white">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between mb-8">
+          <h2 class="text-2xl font-bold text-gray-900">おすすめスポット</h2>
+          <a href="/services?featured=true" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+            すべて見る →
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {featuredServices.map((service) => (
+            <ServiceCard
+              slug={service.data.slug}
+              title={service.data.title}
+              summary={service.data.summary}
+              area={service.data.area}
+              categories={service.data.categories}
+              tags={service.data.tags}
+              images={service.data.images}
+              isFeatured={service.data.isFeatured}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- 新着サービス -->
+  <section class="py-12 lg:py-16">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-2xl font-bold text-gray-900">新着情報</h2>
+        <a href="/services" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+          すべて見る →
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {latestServices.map((service) => (
+          <ServiceCard
+            slug={service.slug}
+            title={service.title}
+            summary={service.summary}
+            area={service.area}
+            categories={service.categories}
+            tags={service.tags}
+            images={service.images}
+            isFeatured={service.isFeatured}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- イベント -->
+  {upcomingEvents.length > 0 && (
+    <section class="py-12 lg:py-16 bg-white">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between mb-8">
+          <h2 class="text-2xl font-bold text-gray-900">近日開催のイベント</h2>
+          <a href="/events" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+            すべて見る →
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {upcomingEvents.map((event) => (
+            <EventCard
+              slug={event.data.slug}
+              title={event.data.title}
+              summary={event.data.summary}
+              area={event.data.area}
+              startAt={event.data.startAt}
+              endAt={event.data.endAt}
+              venue={event.data.venue}
+              images={event.data.images}
+              isFeatured={event.data.isFeatured}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- CTA -->
+  <section class="py-12 lg:py-16 bg-secondary-50">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">
+        あなたのお店・サービスを掲載しませんか？
+      </h2>
+      <p class="text-gray-600 mb-6 max-w-2xl mx-auto">
+        出雲市で子育て家庭向けのサービスを提供されている方、<br class="hidden sm:inline" />
+        ぜひ当サイトに情報をお寄せください。
+      </p>
+      <Button href="/media" variant="secondary" size="lg">
+        掲載希望の方はこちら
+      </Button>
+    </div>
+  </section>
+</BaseLayout>

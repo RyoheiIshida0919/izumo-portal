@@ -1,0 +1,107 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import ServiceCard from '../../components/cards/ServiceCard.astro';
+import Button from '../../components/common/Button.astro';
+import { categories, getSubcategoriesByParent } from '../../content/_meta/categories';
+import { sortByNewest } from '../../lib/utils';
+
+export async function getStaticPaths() {
+  return categories.map((cat) => ({
+    params: { cat: cat.id },
+    props: { category: cat },
+  }));
+}
+
+const { category } = Astro.props;
+
+const allServices = await getCollection('services');
+
+// カテゴリ内のサービス
+const categoryServices = sortByNewest(
+  allServices
+    .filter((s) => s.data.categories.includes(category.id))
+    .map((s) => ({ ...s.data, id: s.id }))
+);
+
+// サブカテゴリ別件数
+const subcategories = getSubcategoriesByParent(category.id).map((sub) => ({
+  ...sub,
+  count: categoryServices.filter((s) => s.subcategories.includes(sub.id)).length,
+}));
+
+const pageTitle = `${category.name}の子育て情報`;
+const pageDescription = `島根県出雲市の${category.description}`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb
+      items={[
+        { label: 'カテゴリから探す', href: '/categories' },
+        { label: category.name },
+      ]}
+    />
+
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="text-4xl">{category.icon}</span>
+        <h1 class="text-3xl font-bold text-gray-900">{category.name}</h1>
+      </div>
+      <p class="text-gray-600">{category.description}</p>
+    </div>
+
+    <!-- サブカテゴリフィルタ -->
+    {subcategories.length > 0 && (
+      <div class="bg-white rounded-xl shadow-sm p-4 mb-8">
+        <h2 class="text-sm font-medium text-gray-700 mb-3">詳細カテゴリで絞り込む</h2>
+        <div class="flex flex-wrap gap-2">
+          <a
+            href={`/categories/${category.id}`}
+            class="px-4 py-2 rounded-full bg-primary-600 text-white text-sm font-medium"
+          >
+            すべて ({categoryServices.length})
+          </a>
+          {subcategories.map((sub) => (
+            <a
+              href={`/services?category=${category.id}&subcategory=${sub.id}`}
+              class="px-4 py-2 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-primary-50 hover:text-primary-700 transition-colors"
+            >
+              {sub.name} ({sub.count})
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- サービス一覧 -->
+    <div class="flex items-center justify-between mb-6">
+      <p class="text-gray-600">
+        <span class="font-bold text-primary-600">{categoryServices.length}</span>件のサービス
+      </p>
+    </div>
+
+    {categoryServices.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {categoryServices.map((service) => (
+          <ServiceCard
+            slug={service.slug}
+            title={service.title}
+            summary={service.summary}
+            area={service.area}
+            categories={service.categories}
+            tags={service.tags}
+            images={service.images}
+            isFeatured={service.isFeatured}
+          />
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-16 bg-white rounded-xl">
+        <p class="text-gray-500 mb-4">このカテゴリのサービスは現在登録されていません</p>
+        <Button href="/services" variant="outline">すべてのサービスを見る</Button>
+      </div>
+    )}
+  </div>
+</BaseLayout>

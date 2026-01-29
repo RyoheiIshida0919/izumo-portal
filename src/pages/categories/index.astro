@@ -1,0 +1,67 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import CategoryCard from '../../components/cards/CategoryCard.astro';
+import { categories, getSubcategoriesByParent } from '../../content/_meta/categories';
+
+const allServices = await getCollection('services');
+
+// カテゴリ別件数
+const categoriesWithCount = categories.map((cat) => ({
+  ...cat,
+  count: allServices.filter((s) => s.data.categories.includes(cat.id)).length,
+  subcategories: getSubcategoriesByParent(cat.id).map((sub) => ({
+    ...sub,
+    count: allServices.filter((s) => s.data.subcategories.includes(sub.id)).length,
+  })),
+}));
+
+const pageTitle = 'カテゴリから探す';
+const pageDescription = 'カテゴリ別で出雲市の子育て情報を検索できます。';
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb items={[{ label: 'カテゴリから探す' }]} />
+
+    <h1 class="text-3xl font-bold text-gray-900 mb-4">{pageTitle}</h1>
+    <p class="text-gray-600 mb-8">
+      目的やジャンルに合わせて子育て情報を探せます。
+    </p>
+
+    <div class="space-y-8">
+      {categoriesWithCount.map((cat) => (
+        <section class="bg-white rounded-xl shadow-sm p-6">
+          <a
+            href={`/categories/${cat.id}`}
+            class="flex items-center gap-3 mb-4 group"
+          >
+            <span class="text-3xl">{cat.icon}</span>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
+                {cat.name}
+                <span class="text-sm font-normal text-gray-500 ml-2">（{cat.count}件）</span>
+              </h2>
+              <p class="text-sm text-gray-500">{cat.description}</p>
+            </div>
+          </a>
+
+          {cat.subcategories.length > 0 && (
+            <div class="flex flex-wrap gap-2 mt-4 pl-12">
+              {cat.subcategories.map((sub) => (
+                <a
+                  href={`/services?subcategory=${sub.id}`}
+                  class="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-primary-50 hover:text-primary-700 transition-colors"
+                >
+                  {sub.name}
+                  <span class="text-gray-400 ml-1">({sub.count})</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </section>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

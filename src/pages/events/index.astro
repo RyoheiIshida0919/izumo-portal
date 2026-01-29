@@ -1,0 +1,136 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import EventCard from '../../components/cards/EventCard.astro';
+import Button from '../../components/common/Button.astro';
+import { areas } from '../../content/_meta/areas';
+import { isUpcoming } from '../../lib/utils';
+
+const allEvents = await getCollection('events');
+
+// URLパラメータ取得
+const url = new URL(Astro.request.url);
+const area = url.searchParams.get('area') || '';
+const showPast = url.searchParams.get('past') === 'true';
+
+// フィルタリング
+let filteredEvents = allEvents;
+
+if (area) {
+  filteredEvents = filteredEvents.filter((e) => e.data.area === area);
+}
+
+// 開催日でソート
+const sortedEvents = filteredEvents
+  .filter((e) => (showPast ? !isUpcoming(e.data.startAt) : isUpcoming(e.data.startAt)))
+  .sort((a, b) => {
+    const dateA = new Date(a.data.startAt).getTime();
+    const dateB = new Date(b.data.startAt).getTime();
+    return showPast ? dateB - dateA : dateA - dateB;
+  });
+
+const pageTitle = 'イベント情報';
+const pageDescription = '出雲市の子育て関連イベント情報を掲載しています。';
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb items={[{ label: 'イベント情報' }]} />
+
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
+
+    <!-- フィルタ -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+      <form method="get" class="flex flex-wrap gap-4 items-end">
+        <div class="flex-1 min-w-48">
+          <label class="block text-sm font-medium text-gray-700 mb-1">エリア</label>
+          <select
+            name="area"
+            class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none"
+          >
+            <option value="">すべてのエリア</option>
+            {areas.map((a) => (
+              <option value={a.id} selected={a.id === area}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div class="flex gap-4 items-center">
+          <label class="inline-flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name="past"
+              value="true"
+              checked={showPast}
+              class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span class="text-sm text-gray-700">過去のイベントも表示</span>
+          </label>
+
+          <Button type="submit" size="sm">絞り込む</Button>
+        </div>
+      </form>
+    </div>
+
+    <!-- タブ -->
+    <div class="flex gap-4 mb-6">
+      <a
+        href={`/events${area ? `?area=${area}` : ''}`}
+        class={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+          !showPast
+            ? 'bg-primary-600 text-white'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        }`}
+      >
+        これからのイベント
+      </a>
+      <a
+        href={`/events?past=true${area ? `&area=${area}` : ''}`}
+        class={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+          showPast
+            ? 'bg-primary-600 text-white'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        }`}
+      >
+        過去のイベント
+      </a>
+    </div>
+
+    <!-- 検索結果 -->
+    <p class="text-gray-600 mb-6">
+      <span class="font-bold text-primary-600">{sortedEvents.length}</span>件のイベント
+    </p>
+
+    {sortedEvents.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {sortedEvents.map((event) => (
+          <EventCard
+            slug={event.data.slug}
+            title={event.data.title}
+            summary={event.data.summary}
+            area={event.data.area}
+            startAt={event.data.startAt}
+            endAt={event.data.endAt}
+            venue={event.data.venue}
+            images={event.data.images}
+            isFeatured={event.data.isFeatured}
+          />
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-16 bg-white rounded-xl">
+        <p class="text-gray-500 mb-4">
+          {showPast ? '過去のイベントはありません' : 'これからのイベントはありません'}
+        </p>
+        {!showPast && (
+          <Button href="/events?past=true" variant="outline">
+            過去のイベントを見る
+          </Button>
+        )}
+      </div>
+    )}
+  </div>
+</BaseLayout>

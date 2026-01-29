@@ -1,0 +1,104 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumb from '../components/common/Breadcrumb.astro';
+import Button from '../components/common/Button.astro';
+import { LINE_URL, BUSINESS_FORM_URL, SITE_NAME } from '../lib/constants';
+
+const pageTitle = '掲載希望';
+const pageDescription = `${SITE_NAME}への掲載をご希望の方へのご案内です。`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb items={[{ label: pageTitle }]} />
+
+    <article class="bg-white rounded-xl shadow-sm p-6 lg:p-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
+
+      <div class="prose prose-gray max-w-none mb-8">
+        <p>
+          {SITE_NAME}では、出雲市内で子育て家庭向けのサービスを提供されている
+          事業者様・個人様からの情報提供を歓迎しております。
+        </p>
+        <p>
+          掲載は無料です。お気軽にお問い合わせください。
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6 mb-8">
+        <!-- 個人向け -->
+        <div class="bg-secondary-50 rounded-lg p-6">
+          <h2 class="text-lg font-bold text-gray-900 mb-2">個人・小規模事業者の方</h2>
+          <p class="text-sm text-gray-600 mb-4">
+            自宅サロン、個人教室、フリーランスの方など
+          </p>
+          <ul class="text-sm text-gray-600 mb-6 space-y-1">
+            <li>・お気軽にLINEでご相談ください</li>
+            <li>・写真や文章は後から調整可能です</li>
+          </ul>
+          <Button href={LINE_URL} variant="secondary" class="w-full">
+            LINEで相談する
+          </Button>
+        </div>
+
+        <!-- 法人向け -->
+        <div class="bg-primary-50 rounded-lg p-6">
+          <h2 class="text-lg font-bold text-gray-900 mb-2">法人・団体の方</h2>
+          <p class="text-sm text-gray-600 mb-4">
+            店舗、クリニック、施設、NPO法人など
+          </p>
+          <ul class="text-sm text-gray-600 mb-6 space-y-1">
+            <li>・専用フォームからお申し込みください</li>
+            <li>・複数施設の掲載も可能です</li>
+          </ul>
+          <Button href={BUSINESS_FORM_URL} class="w-full">
+            掲載申し込みフォーム
+          </Button>
+        </div>
+      </div>
+
+      <div class="border-t pt-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">掲載できる情報</h2>
+        <ul class="space-y-2 text-gray-600">
+          <li class="flex items-start gap-2">
+            <span class="text-primary-500">✓</span>
+            <span>子連れで利用できる飲食店・カフェ</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary-500">✓</span>
+            <span>子ども向けの習い事・教室</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary-500">✓</span>
+            <span>小児科・歯医者など医療機関</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary-500">✓</span>
+            <span>子育て支援サービス・一時預かり</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary-500">✓</span>
+            <span>ベビー・キッズ用品店</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary-500">✓</span>
+            <span>ママ向けサロン（美容室、ネイル、整体など）</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary-500">✓</span>
+            <span>子育て関連のイベント情報</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+        <h3 class="font-bold text-gray-900 mb-2">注意事項</h3>
+        <ul class="text-sm text-gray-600 space-y-1">
+          <li>・掲載内容は当サイトの基準に基づき審査させていただきます</li>
+          <li>・掲載後も情報の更新にご協力をお願いいたします</li>
+          <li>・公序良俗に反する内容、法令違反が疑われる場合はお断りする場合があります</li>
+        </ul>
+      </div>
+    </article>
+  </div>
+</BaseLayout>

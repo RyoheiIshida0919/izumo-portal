@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #fef7ee;
+  --color-primary-100: #fdedd3;
+  --color-primary-200: #fad7a5;
+  --color-primary-300: #f6ba6d;
+  --color-primary-400: #f19333;
+  --color-primary-500: #ee7712;
+  --color-primary-600: #df5d08;
+  --color-primary-700: #b94509;
+  --color-primary-800: #93370f;
+  --color-primary-900: #772f10;
+  --color-primary-950: #401506;
+
+  --color-secondary-50: #f0fdf4;
+  --color-secondary-100: #dcfce7;
+  --color-secondary-200: #bbf7d0;
+  --color-secondary-300: #86efac;
+  --color-secondary-400: #4ade80;
+  --color-secondary-500: #22c55e;
+  --color-secondary-600: #16a34a;
+  --color-secondary-700: #15803d;
+  --color-secondary-800: #166534;
+  --color-secondary-900: #14532d;
+  --color-secondary-950: #052e16;
+
+  --font-family-sans: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo,
+    sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family-sans);
+}
+
+.prose a {
+  color: var(--color-primary-600);
+}
+
+.prose a:hover {
+  color: var(--color-primary-700);
+}

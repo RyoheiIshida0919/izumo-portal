@@ -1,0 +1,61 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumb from '../components/common/Breadcrumb.astro';
+import { SITE_NAME } from '../lib/constants';
+
+const pageTitle = 'このサイトについて';
+const pageDescription = `${SITE_NAME}の運営方針や目的についてご紹介します。`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb items={[{ label: pageTitle }]} />
+
+    <article class="bg-white rounded-xl shadow-sm p-6 lg:p-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
+
+      <div class="prose prose-gray max-w-none">
+        <h2>サイトの目的</h2>
+        <p>
+          {SITE_NAME}は、島根県出雲市で子育てをするご家庭に向けて、地域の子育て情報を分かりやすく発信するポータルサイトです。
+        </p>
+        <p>
+          子連れで行けるカフェやレストラン、習い事教室、病院、公園など、子育て家庭に役立つ情報をまとめて掲載しています。
+        </p>
+
+        <h2>掲載情報について</h2>
+        <p>
+          当サイトに掲載している情報は、可能な限り正確な情報を掲載するよう努めておりますが、
+          営業時間や料金等は変更される場合がございます。
+          お出かけ前には、各施設の公式サイト等で最新情報をご確認ください。
+        </p>
+
+        <h2>掲載をご希望の方へ</h2>
+        <p>
+          出雲市内で子育て家庭向けのサービスを提供されている事業者様、
+          イベントを開催される団体様からの情報提供を歓迎しております。
+        </p>
+        <p>
+          <a href="/media">掲載希望ページ</a>よりお気軽にお問い合わせください。
+        </p>
+
+        <h2>運営について</h2>
+        <p>
+          当サイトは、出雲市の子育て環境をより良くしたいという思いから、
+          有志のボランティアによって運営されています。
+        </p>
+
+        <h2>免責事項</h2>
+        <p>
+          当サイトの情報を利用したことによる損害について、運営者は一切の責任を負いかねます。
+          あらかじめご了承ください。
+        </p>
+
+        <h2>お問い合わせ</h2>
+        <p>
+          ご質問やご要望は<a href="/contact">お問い合わせページ</a>よりお寄せください。
+        </p>
+      </div>
+    </article>
+  </div>
+</BaseLayout>

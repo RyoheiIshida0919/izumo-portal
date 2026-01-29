@@ -1,0 +1,53 @@
+---
+import { SITE_NAME, FOOTER_NAV } from '../../lib/constants';
+---
+
+<footer class="bg-gray-800 text-gray-300">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div>
+        <div class="flex items-center gap-2 text-white font-bold text-lg mb-4">
+          <span class="text-xl">🏠</span>
+          <span>{SITE_NAME}</span>
+        </div>
+        <p class="text-sm text-gray-400">
+          島根県出雲市の子育て家庭向け地域ポータルサイト。子連れで行けるお店や施設、イベント情報を発信しています。
+        </p>
+      </div>
+
+      <div>
+        <h3 class="text-white font-semibold mb-4">サイトマップ</h3>
+        <ul class="space-y-2">
+          {
+            FOOTER_NAV.slice(0, 3).map((item) => (
+              <li>
+                <a href={item.href} class="text-sm hover:text-white transition-colors">
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-white font-semibold mb-4">ご利用について</h3>
+        <ul class="space-y-2">
+          {
+            FOOTER_NAV.slice(3).map((item) => (
+              <li>
+                <a href={item.href} class="text-sm hover:text-white transition-colors">
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-8 pt-8 border-t border-gray-700 text-center text-sm text-gray-400">
+      <p>&copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.</p>
+    </div>
+  </div>
+</footer>

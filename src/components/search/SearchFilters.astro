@@ -1,0 +1,125 @@
+---
+import { areas } from '../../content/_meta/areas';
+import { categories, subcategories } from '../../content/_meta/categories';
+import { targetAges } from '../../content/_meta/target-ages';
+import { tags } from '../../content/_meta/tags';
+
+interface Props {
+  selectedArea?: string;
+  selectedCategory?: string;
+  selectedSubcategory?: string;
+  selectedTargetAge?: string;
+  selectedTags?: string[];
+  showSubcategory?: boolean;
+  showTargetAge?: boolean;
+  showTags?: boolean;
+}
+
+const {
+  selectedArea = '',
+  selectedCategory = '',
+  selectedSubcategory = '',
+  selectedTargetAge = '',
+  selectedTags = [],
+  showSubcategory = true,
+  showTargetAge = true,
+  showTags = false,
+} = Astro.props;
+
+const filteredSubcategories = selectedCategory
+  ? subcategories.filter((s) => s.parentId === selectedCategory)
+  : subcategories;
+---
+
+<div class="space-y-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- エリア -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">エリア</label>
+      <select
+        name="area"
+        class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none"
+      >
+        <option value="">すべてのエリア</option>
+        {areas.map((area) => (
+          <option value={area.id} selected={area.id === selectedArea}>
+            {area.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <!-- 大カテゴリ -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label>
+      <select
+        name="category"
+        class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none"
+      >
+        <option value="">すべてのカテゴリ</option>
+        {categories.map((cat) => (
+          <option value={cat.id} selected={cat.id === selectedCategory}>
+            {cat.icon} {cat.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <!-- 詳細カテゴリ -->
+    {showSubcategory && (
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">詳細カテゴリ</label>
+        <select
+          name="subcategory"
+          class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none"
+        >
+          <option value="">すべて</option>
+          {filteredSubcategories.map((sub) => (
+            <option value={sub.id} selected={sub.id === selectedSubcategory}>
+              {sub.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    )}
+
+    <!-- 対象年齢 -->
+    {showTargetAge && (
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">対象年齢</label>
+        <select
+          name="targetAge"
+          class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none"
+        >
+          <option value="">すべての年齢</option>
+          {targetAges.map((age) => (
+            <option value={age.id} selected={age.id === selectedTargetAge}>
+              {age.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    )}
+  </div>
+
+  <!-- タグ（チェックボックス） -->
+  {showTags && (
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">こだわり条件</label>
+      <div class="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 hover:border-primary-500 cursor-pointer transition-colors has-[:checked]:bg-primary-50 has-[:checked]:border-primary-500">
+            <input
+              type="checkbox"
+              name="tags"
+              value={tag.id}
+              checked={selectedTags.includes(tag.id)}
+              class="sr-only"
+            />
+            <span class="text-sm">{tag.icon} {tag.name}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  )}
+</div>

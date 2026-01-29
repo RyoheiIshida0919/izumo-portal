@@ -1,0 +1,116 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import ServiceCard from '../../components/cards/ServiceCard.astro';
+import EventCard from '../../components/cards/EventCard.astro';
+import Button from '../../components/common/Button.astro';
+import { areas, getAreaName } from '../../content/_meta/areas';
+import { sortByNewest, isUpcoming } from '../../lib/utils';
+
+export async function getStaticPaths() {
+  return areas.map((area) => ({
+    params: { area: area.id },
+    props: { area },
+  }));
+}
+
+const { area } = Astro.props;
+
+const allServices = await getCollection('services');
+const allEvents = await getCollection('events');
+
+// エリア内のサービス
+const areaServices = sortByNewest(
+  allServices
+    .filter((s) => s.data.area === area.id)
+    .map((s) => ({ ...s.data, id: s.id }))
+);
+
+// エリア内のイベント
+const areaEvents = allEvents
+  .filter((e) => e.data.area === area.id && isUpcoming(e.data.startAt))
+  .sort((a, b) => new Date(a.data.startAt).getTime() - new Date(b.data.startAt).getTime())
+  .slice(0, 4);
+
+const pageTitle = `${area.name}エリアの子育て情報`;
+const pageDescription = `島根県出雲市${area.name}エリアの子育て家庭向けサービス・イベント情報です。`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb
+      items={[
+        { label: 'エリアから探す', href: '/areas' },
+        { label: `${area.name}エリア` },
+      ]}
+    />
+
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">{area.name}エリア</h1>
+      <p class="text-gray-600">{area.description}</p>
+    </div>
+
+    <!-- サービス一覧 -->
+    <section class="mb-12">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">
+          サービス・施設
+          <span class="text-lg font-normal text-gray-500 ml-2">（{areaServices.length}件）</span>
+        </h2>
+        <Button href={`/services?area=${area.id}`} variant="outline" size="sm">
+          すべて見る
+        </Button>
+      </div>
+
+      {areaServices.length > 0 ? (
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {areaServices.slice(0, 8).map((service) => (
+            <ServiceCard
+              slug={service.slug}
+              title={service.title}
+              summary={service.summary}
+              area={service.area}
+              categories={service.categories}
+              tags={service.tags}
+              images={service.images}
+              isFeatured={service.isFeatured}
+            />
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-12 bg-white rounded-xl">
+          <p class="text-gray-500">このエリアのサービスは現在登録されていません</p>
+        </div>
+      )}
+    </section>
+
+    <!-- イベント -->
+    {areaEvents.length > 0 && (
+      <section>
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">近日開催のイベント</h2>
+          <Button href={`/events?area=${area.id}`} variant="outline" size="sm">
+            すべて見る
+          </Button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {areaEvents.map((event) => (
+            <EventCard
+              slug={event.data.slug}
+              title={event.data.title}
+              summary={event.data.summary}
+              area={event.data.area}
+              startAt={event.data.startAt}
+              endAt={event.data.endAt}
+              venue={event.data.venue}
+              images={event.data.images}
+              isFeatured={event.data.isFeatured}
+            />
+          ))}
+        </div>
+      </section>
+    )}
+  </div>
+</BaseLayout>

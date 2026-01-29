@@ -1,0 +1,133 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumb from '../components/common/Breadcrumb.astro';
+import { areas } from '../content/_meta/areas';
+import { categories } from '../content/_meta/categories';
+import { SITE_NAME } from '../lib/constants';
+
+const allServices = await getCollection('services');
+const allEvents = await getCollection('events');
+
+const pageTitle = 'サイトマップ';
+const pageDescription = `${SITE_NAME}のサイトマップです。`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb items={[{ label: pageTitle }]} />
+
+    <article class="bg-white rounded-xl shadow-sm p-6 lg:p-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
+
+      <div class="space-y-8">
+        <!-- メインページ -->
+        <section>
+          <h2 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b">メインページ</h2>
+          <ul class="space-y-2">
+            <li>
+              <a href="/" class="text-primary-600 hover:underline">ホーム</a>
+            </li>
+            <li>
+              <a href="/services" class="text-primary-600 hover:underline">サービス検索</a>
+            </li>
+            <li>
+              <a href="/events" class="text-primary-600 hover:underline">イベント情報</a>
+            </li>
+          </ul>
+        </section>
+
+        <!-- エリアページ -->
+        <section>
+          <h2 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b">エリア</h2>
+          <ul class="space-y-2">
+            <li>
+              <a href="/areas" class="text-primary-600 hover:underline">エリア一覧</a>
+            </li>
+            {areas.map((area) => (
+              <li class="ml-4">
+                <a href={`/areas/${area.id}`} class="text-primary-600 hover:underline">
+                  {area.name}エリア
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <!-- カテゴリページ -->
+        <section>
+          <h2 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b">カテゴリ</h2>
+          <ul class="space-y-2">
+            <li>
+              <a href="/categories" class="text-primary-600 hover:underline">カテゴリ一覧</a>
+            </li>
+            {categories.map((cat) => (
+              <li class="ml-4">
+                <a href={`/categories/${cat.id}`} class="text-primary-600 hover:underline">
+                  {cat.icon} {cat.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <!-- サービス詳細 -->
+        <section>
+          <h2 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b">
+            サービス詳細（{allServices.length}件）
+          </h2>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {allServices.slice(0, 20).map((service) => (
+              <li>
+                <a href={`/services/${service.data.slug}`} class="text-primary-600 hover:underline text-sm">
+                  {service.data.title}
+                </a>
+              </li>
+            ))}
+            {allServices.length > 20 && (
+              <li class="text-gray-500 text-sm">...他{allServices.length - 20}件</li>
+            )}
+          </ul>
+        </section>
+
+        <!-- イベント詳細 -->
+        <section>
+          <h2 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b">
+            イベント詳細（{allEvents.length}件）
+          </h2>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {allEvents.map((event) => (
+              <li>
+                <a href={`/events/${event.data.slug}`} class="text-primary-600 hover:underline text-sm">
+                  {event.data.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <!-- その他ページ -->
+        <section>
+          <h2 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b">その他</h2>
+          <ul class="space-y-2">
+            <li>
+              <a href="/about" class="text-primary-600 hover:underline">このサイトについて</a>
+            </li>
+            <li>
+              <a href="/contact" class="text-primary-600 hover:underline">お問い合わせ</a>
+            </li>
+            <li>
+              <a href="/media" class="text-primary-600 hover:underline">掲載希望</a>
+            </li>
+            <li>
+              <a href="/privacy" class="text-primary-600 hover:underline">プライバシーポリシー</a>
+            </li>
+            <li>
+              <a href="/terms" class="text-primary-600 hover:underline">利用規約</a>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </article>
+  </div>
+</BaseLayout>

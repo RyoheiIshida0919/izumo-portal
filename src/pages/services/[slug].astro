@@ -1,0 +1,225 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import Tag from '../../components/common/Tag.astro';
+import Button from '../../components/common/Button.astro';
+import ServiceCard from '../../components/cards/ServiceCard.astro';
+import { getAreaName, getCategoryName, getSubcategoryName, getTagName } from '../../content/_meta';
+import { formatDate } from '../../lib/utils';
+import { DUMMY_IMAGE_URL } from '../../lib/constants';
+
+export async function getStaticPaths() {
+  const services = await getCollection('services');
+  return services.map((service) => ({
+    params: { slug: service.data.slug },
+    props: { service },
+  }));
+}
+
+const { service } = Astro.props;
+const { data } = service;
+const { Content } = await render(service);
+
+// 関連サービス
+const allServices = await getCollection('services');
+const relatedServices = allServices
+  .filter(
+    (s) =>
+      s.data.slug !== data.slug &&
+      (s.data.categories.some((c) => data.categories.includes(c)) || s.data.area === data.area)
+  )
+  .slice(0, 4);
+
+const mainImage = data.images[0]?.url || DUMMY_IMAGE_URL;
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.summary}
+  ogImage={mainImage}
+>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb
+      items={[
+        { label: 'サービス検索', href: '/services' },
+        { label: data.title },
+      ]}
+    />
+
+    <article class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <!-- メイン画像 -->
+      <div class="aspect-[16/9] md:aspect-[21/9] overflow-hidden">
+        <img
+          src={mainImage}
+          alt={data.images[0]?.alt || data.title}
+          class="w-full h-full object-cover"
+        />
+      </div>
+
+      <div class="p-6 lg:p-8">
+        <!-- タグ -->
+        <div class="flex flex-wrap gap-2 mb-4">
+          <Tag label={getAreaName(data.area)} variant="primary" size="md" />
+          {data.categories.map((cat) => (
+            <Tag label={getCategoryName(cat)} size="md" />
+          ))}
+          {data.subcategories.map((sub) => (
+            <Tag label={getSubcategoryName(sub)} variant="secondary" size="md" />
+          ))}
+        </div>
+
+        <!-- タイトル -->
+        <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">{data.title}</h1>
+
+        <!-- サマリー -->
+        <p class="text-lg text-gray-600 mb-6">{data.summary}</p>
+
+        <!-- 詳細情報 -->
+        <div class="grid md:grid-cols-2 gap-8 mb-8">
+          <div class="space-y-4">
+            {data.address && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">📍</span>
+                <div>
+                  <p class="text-sm text-gray-500">住所</p>
+                  <p class="text-gray-900">{data.address}</p>
+                </div>
+              </div>
+            )}
+            {data.access && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">🚃</span>
+                <div>
+                  <p class="text-sm text-gray-500">アクセス</p>
+                  <p class="text-gray-900">{data.access}</p>
+                </div>
+              </div>
+            )}
+            {data.phone && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">📞</span>
+                <div>
+                  <p class="text-sm text-gray-500">電話番号</p>
+                  <p class="text-gray-900">{data.phone}</p>
+                </div>
+              </div>
+            )}
+            {data.hours && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">🕐</span>
+                <div>
+                  <p class="text-sm text-gray-500">営業時間</p>
+                  <p class="text-gray-900">{data.hours}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div class="space-y-4">
+            {data.closedDays && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">🗓</span>
+                <div>
+                  <p class="text-sm text-gray-500">定休日</p>
+                  <p class="text-gray-900">{data.closedDays}</p>
+                </div>
+              </div>
+            )}
+            {data.parking && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">🅿️</span>
+                <div>
+                  <p class="text-sm text-gray-500">駐車場</p>
+                  <p class="text-gray-900">{data.parking}</p>
+                </div>
+              </div>
+            )}
+            {data.price && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">💰</span>
+                <div>
+                  <p class="text-sm text-gray-500">料金</p>
+                  <p class="text-gray-900">{data.price}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <!-- リンク -->
+        <div class="flex flex-wrap gap-3 mb-8">
+          {data.website && (
+            <Button href={data.website} variant="outline" size="sm">
+              公式サイト →
+            </Button>
+          )}
+          {data.instagram && (
+            <Button href={data.instagram} variant="outline" size="sm">
+              Instagram →
+            </Button>
+          )}
+        </div>
+
+        <!-- こだわり条件タグ -->
+        {data.tags.length > 0 && (
+          <div class="mb-8">
+            <h2 class="text-sm font-medium text-gray-500 mb-2">こだわり条件</h2>
+            <div class="flex flex-wrap gap-2">
+              {data.tags.map((tag) => (
+                <span class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">
+                  {getTagName(tag)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <!-- 対象年齢 -->
+        {data.targetAges.length > 0 && (
+          <div class="mb-8">
+            <h2 class="text-sm font-medium text-gray-500 mb-2">対象年齢</h2>
+            <div class="flex flex-wrap gap-2">
+              {data.targetAges.map((age) => (
+                <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-sm">
+                  {age === 'pregnant' ? '妊娠中' : age === '0-1' ? '0〜1歳' : age === '2-3' ? '2〜3歳' : age === '4-6' ? '4〜6歳' : age === 'elementary' ? '小学生' : '全年齢'}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <!-- 本文 -->
+        <div class="prose prose-gray max-w-none">
+          <Content />
+        </div>
+
+        <!-- 更新日 -->
+        <div class="mt-8 pt-6 border-t text-sm text-gray-500">
+          <p>最終更新: {formatDate(data.updatedAt)}</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- 関連サービス -->
+    {relatedServices.length > 0 && (
+      <section class="mt-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">関連するサービス</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {relatedServices.map((s) => (
+            <ServiceCard
+              slug={s.data.slug}
+              title={s.data.title}
+              summary={s.data.summary}
+              area={s.data.area}
+              categories={s.data.categories}
+              tags={s.data.tags}
+              images={s.data.images}
+              isFeatured={s.data.isFeatured}
+            />
+          ))}
+        </div>
+      </section>
+    )}
+  </div>
+</BaseLayout>

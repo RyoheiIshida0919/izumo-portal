@@ -1,0 +1,127 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import SearchBox from '../../components/search/SearchBox.astro';
+import SearchFilters from '../../components/search/SearchFilters.astro';
+import SortSelect from '../../components/search/SortSelect.astro';
+import ServiceCard from '../../components/cards/ServiceCard.astro';
+import Button from '../../components/common/Button.astro';
+import { sortByNewest } from '../../lib/utils';
+
+const allServices = await getCollection('services');
+
+// URLパラメータ取得
+const url = new URL(Astro.request.url);
+const keyword = url.searchParams.get('keyword') || '';
+const area = url.searchParams.get('area') || '';
+const category = url.searchParams.get('category') || '';
+const subcategory = url.searchParams.get('subcategory') || '';
+const targetAge = url.searchParams.get('targetAge') || '';
+const tagsParam = url.searchParams.getAll('tags');
+const sort = url.searchParams.get('sort') || 'newest';
+const featured = url.searchParams.get('featured') === 'true';
+
+// フィルタリング
+let filteredServices = allServices;
+
+if (keyword) {
+  const lowerKeyword = keyword.toLowerCase();
+  filteredServices = filteredServices.filter(
+    (s) =>
+      s.data.title.toLowerCase().includes(lowerKeyword) ||
+      s.data.summary.toLowerCase().includes(lowerKeyword)
+  );
+}
+
+if (area) {
+  filteredServices = filteredServices.filter((s) => s.data.area === area);
+}
+
+if (category) {
+  filteredServices = filteredServices.filter((s) => s.data.categories.includes(category));
+}
+
+if (subcategory) {
+  filteredServices = filteredServices.filter((s) => s.data.subcategories.includes(subcategory));
+}
+
+if (targetAge) {
+  filteredServices = filteredServices.filter((s) => s.data.targetAges.includes(targetAge));
+}
+
+if (tagsParam.length > 0) {
+  filteredServices = filteredServices.filter((s) =>
+    tagsParam.every((tag) => s.data.tags.includes(tag))
+  );
+}
+
+if (featured) {
+  filteredServices = filteredServices.filter((s) => s.data.isFeatured);
+}
+
+// ソート
+const sortedServices = sortByNewest(filteredServices.map((s) => ({ ...s.data, id: s.id })));
+
+const pageTitle = 'サービス検索';
+const pageDescription = '出雲市の子育て家庭向けサービスを検索できます。';
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb items={[{ label: 'サービス検索' }]} />
+
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
+
+    <!-- 検索フォーム -->
+    <form method="get" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+      <div class="mb-4">
+        <SearchBox value={keyword} />
+      </div>
+      <SearchFilters
+        selectedArea={area}
+        selectedCategory={category}
+        selectedSubcategory={subcategory}
+        selectedTargetAge={targetAge}
+        selectedTags={tagsParam}
+        showTags={true}
+      />
+      <div class="mt-4 flex flex-wrap gap-4 items-center justify-between">
+        <Button type="submit">検索する</Button>
+        <a href="/services" class="text-sm text-gray-500 hover:text-primary-600">
+          条件をクリア
+        </a>
+      </div>
+    </form>
+
+    <!-- 検索結果 -->
+    <div class="flex items-center justify-between mb-6">
+      <p class="text-gray-600">
+        <span class="font-bold text-primary-600">{sortedServices.length}</span>件のサービスが見つかりました
+      </p>
+      <SortSelect value={sort} />
+    </div>
+
+    {sortedServices.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {sortedServices.map((service) => (
+          <ServiceCard
+            slug={service.slug}
+            title={service.title}
+            summary={service.summary}
+            area={service.area}
+            categories={service.categories}
+            tags={service.tags}
+            images={service.images}
+            isFeatured={service.isFeatured}
+          />
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-16 bg-white rounded-xl">
+        <p class="text-gray-500 mb-4">条件に合うサービスが見つかりませんでした</p>
+        <Button href="/services" variant="outline">すべてのサービスを見る</Button>
+      </div>
+    )}
+  </div>
+</BaseLayout>

@@ -1,0 +1,61 @@
+---
+import Tag from '../common/Tag.astro';
+import { getAreaName, getCategoryName, getTagName } from '../../content/_meta';
+import { DUMMY_IMAGE_URL } from '../../lib/constants';
+
+interface Props {
+  slug: string;
+  title: string;
+  summary: string;
+  area: string;
+  categories: string[];
+  tags: string[];
+  images: { url: string; alt: string }[];
+  isFeatured?: boolean;
+}
+
+const { slug, title, summary, area, categories, tags, images, isFeatured = false } = Astro.props;
+const imageUrl = images[0]?.url || DUMMY_IMAGE_URL;
+const imageAlt = images[0]?.alt || title;
+---
+
+<article class="group bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+  <a href={`/services/${slug}`} class="block">
+    <div class="relative aspect-[4/3] overflow-hidden">
+      <img
+        src={imageUrl}
+        alt={imageAlt}
+        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        loading="lazy"
+      />
+      {
+        isFeatured && (
+          <span class="absolute top-2 left-2 bg-primary-500 text-white text-xs font-bold px-2 py-1 rounded">
+            おすすめ
+          </span>
+        )
+      }
+    </div>
+
+    <div class="p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <Tag label={getAreaName(area)} variant="primary" />
+        {categories.slice(0, 1).map((cat) => (
+          <Tag label={getCategoryName(cat)} />
+        ))}
+      </div>
+
+      <h3 class="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
+        {title}
+      </h3>
+
+      <p class="text-sm text-gray-600 line-clamp-2 mb-3">{summary}</p>
+
+      <div class="flex flex-wrap gap-1">
+        {tags.slice(0, 3).map((tag) => (
+          <span class="text-xs text-gray-500">#{getTagName(tag)}</span>
+        ))}
+      </div>
+    </div>
+  </a>
+</article>

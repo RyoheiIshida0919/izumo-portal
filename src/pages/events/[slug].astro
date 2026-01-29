@@ -1,0 +1,210 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import Tag from '../../components/common/Tag.astro';
+import Button from '../../components/common/Button.astro';
+import EventCard from '../../components/cards/EventCard.astro';
+import { getAreaName, getCategoryName, getTagName } from '../../content/_meta';
+import { formatDate, isUpcoming } from '../../lib/utils';
+import { DUMMY_IMAGE_URL } from '../../lib/constants';
+
+export async function getStaticPaths() {
+  const events = await getCollection('events');
+  return events.map((event) => ({
+    params: { slug: event.data.slug },
+    props: { event },
+  }));
+}
+
+const { event } = Astro.props;
+const { data } = event;
+const { Content } = await render(event);
+
+// 関連イベント
+const allEvents = await getCollection('events');
+const relatedEvents = allEvents
+  .filter(
+    (e) =>
+      e.data.slug !== data.slug &&
+      isUpcoming(e.data.startAt) &&
+      (e.data.categories.some((c) => data.categories.includes(c)) || e.data.area === data.area)
+  )
+  .sort((a, b) => new Date(a.data.startAt).getTime() - new Date(b.data.startAt).getTime())
+  .slice(0, 4);
+
+const mainImage = data.images[0]?.url || DUMMY_IMAGE_URL;
+const isPastEvent = !isUpcoming(data.startAt);
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.summary}
+  ogImage={mainImage}
+>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb
+      items={[
+        { label: 'イベント情報', href: '/events' },
+        { label: data.title },
+      ]}
+    />
+
+    <article class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <!-- メイン画像 -->
+      <div class="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden">
+        <img
+          src={mainImage}
+          alt={data.images[0]?.alt || data.title}
+          class="w-full h-full object-cover"
+        />
+        {isPastEvent && (
+          <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span class="text-white text-2xl font-bold">このイベントは終了しました</span>
+          </div>
+        )}
+      </div>
+
+      <div class="p-6 lg:p-8">
+        <!-- タグ -->
+        <div class="flex flex-wrap gap-2 mb-4">
+          <Tag label={getAreaName(data.area)} variant="primary" size="md" />
+          {data.categories.map((cat) => (
+            <Tag label={getCategoryName(cat)} size="md" />
+          ))}
+        </div>
+
+        <!-- タイトル -->
+        <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">{data.title}</h1>
+
+        <!-- サマリー -->
+        <p class="text-lg text-gray-600 mb-6">{data.summary}</p>
+
+        <!-- イベント情報 -->
+        <div class="bg-gray-50 rounded-lg p-6 mb-8">
+          <h2 class="font-bold text-gray-900 mb-4">イベント詳細</h2>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="flex gap-3">
+              <span class="text-gray-400 w-5">📅</span>
+              <div>
+                <p class="text-sm text-gray-500">開催日</p>
+                <p class="text-gray-900 font-medium">
+                  {formatDate(data.startAt)}
+                  {data.endAt && data.endAt !== data.startAt && ` 〜 ${formatDate(data.endAt)}`}
+                </p>
+              </div>
+            </div>
+
+            {data.venue && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">📍</span>
+                <div>
+                  <p class="text-sm text-gray-500">会場</p>
+                  <p class="text-gray-900">{data.venue}</p>
+                </div>
+              </div>
+            )}
+
+            {data.fee && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">💰</span>
+                <div>
+                  <p class="text-sm text-gray-500">参加費</p>
+                  <p class="text-gray-900">{data.fee}</p>
+                </div>
+              </div>
+            )}
+
+            {data.organizer && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">🏢</span>
+                <div>
+                  <p class="text-sm text-gray-500">主催</p>
+                  <p class="text-gray-900">{data.organizer}</p>
+                </div>
+              </div>
+            )}
+
+            {data.contact && (
+              <div class="flex gap-3">
+                <span class="text-gray-400 w-5">📞</span>
+                <div>
+                  <p class="text-sm text-gray-500">お問い合わせ</p>
+                  <p class="text-gray-900">{data.contact}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {!isPastEvent && data.reservationUrl && (
+            <div class="mt-6">
+              <Button href={data.reservationUrl} size="lg" class="w-full md:w-auto">
+                予約・申し込みはこちら
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <!-- 対象年齢 -->
+        {data.targetAges.length > 0 && (
+          <div class="mb-8">
+            <h2 class="text-sm font-medium text-gray-500 mb-2">対象年齢</h2>
+            <div class="flex flex-wrap gap-2">
+              {data.targetAges.map((age) => (
+                <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-sm">
+                  {age === 'pregnant' ? '妊娠中' : age === '0-1' ? '0〜1歳' : age === '2-3' ? '2〜3歳' : age === '4-6' ? '4〜6歳' : age === 'elementary' ? '小学生' : '全年齢'}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <!-- こだわり条件タグ -->
+        {data.tags.length > 0 && (
+          <div class="mb-8">
+            <h2 class="text-sm font-medium text-gray-500 mb-2">特徴</h2>
+            <div class="flex flex-wrap gap-2">
+              {data.tags.map((tag) => (
+                <span class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">
+                  {getTagName(tag)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <!-- 本文 -->
+        <div class="prose prose-gray max-w-none">
+          <Content />
+        </div>
+
+        <!-- 更新日 -->
+        <div class="mt-8 pt-6 border-t text-sm text-gray-500">
+          <p>最終更新: {formatDate(data.updatedAt)}</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- 関連イベント -->
+    {relatedEvents.length > 0 && (
+      <section class="mt-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">関連するイベント</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {relatedEvents.map((e) => (
+            <EventCard
+              slug={e.data.slug}
+              title={e.data.title}
+              summary={e.data.summary}
+              area={e.data.area}
+              startAt={e.data.startAt}
+              endAt={e.data.endAt}
+              venue={e.data.venue}
+              images={e.data.images}
+              isFeatured={e.data.isFeatured}
+            />
+          ))}
+        </div>
+      </section>
+    )}
+  </div>
+</BaseLayout>

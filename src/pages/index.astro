@@ -38,13 +38,24 @@ const categoryCounts = categories.map((cat) => ({
 
 <BaseLayout>
   <!-- ヒーローセクション -->
-  <section class="bg-gradient-to-br from-primary-500 to-primary-600 text-white py-16 lg:py-24">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  <section class="relative text-white py-16 lg:py-24 overflow-hidden">
+    <!-- 背景画像 -->
+    <div class="absolute inset-0">
+      <img
+        src="https://images.unsplash.com/photo-1536640712-4d4c36ff0e4e?auto=format&fit=crop&w=1920&q=80"
+        alt="親子で楽しく遊ぶ様子"
+        class="w-full h-full object-cover"
+      />
+      <!-- オーバーレイ -->
+      <div class="absolute inset-0 bg-gradient-to-br from-primary-600/85 to-primary-700/80"></div>
+    </div>
+
+    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-8">
-        <h1 class="text-3xl lg:text-5xl font-bold mb-4">
+        <h1 class="text-3xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
           出雲市の子育て情報を<br class="sm:hidden" />もっと身近に
         </h1>
-        <p class="text-lg lg:text-xl text-primary-100 max-w-2xl mx-auto">
+        <p class="text-lg lg:text-xl text-white/90 max-w-2xl mx-auto drop-shadow">
           子連れで行けるお店、習い事、病院、公園など<br />
           出雲市の子育て情報をまとめて検索できます
         </p>

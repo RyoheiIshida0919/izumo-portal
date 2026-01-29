@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumb from '../../components/common/Breadcrumb.astro';
 import EventCard from '../../components/cards/EventCard.astro';
+import EventCalendar from '../../components/events/EventCalendar.astro';
 import Button from '../../components/common/Button.astro';
 import { areas } from '../../content/_meta/areas';
 import { isUpcoming } from '../../lib/utils';
@@ -13,6 +14,14 @@ const allEvents = await getCollection('events');
 const url = new URL(Astro.request.url);
 const area = url.searchParams.get('area') || '';
 const showPast = url.searchParams.get('past') === 'true';
+const viewMode = url.searchParams.get('view') || 'list'; // 'list' or 'calendar'
+
+// カレンダー表示用の年月
+const today = new Date();
+const yearParam = url.searchParams.get('year');
+const monthParam = url.searchParams.get('month');
+const currentYear = yearParam ? parseInt(yearParam, 10) : today.getFullYear();
+const currentMonth = monthParam ? parseInt(monthParam, 10) - 1 : today.getMonth();
 
 // フィルタリング
 let filteredEvents = allEvents;
@@ -30,8 +39,29 @@ const sortedEvents = filteredEvents
     return showPast ? dateB - dateA : dateA - dateB;
   });
 
+// カレンダー用のイベントデータ
+const calendarEvents = filteredEvents.map((e) => ({
+  slug: e.data.slug,
+  title: e.data.title,
+  startAt: e.data.startAt,
+  endAt: e.data.endAt,
+}));
+
 const pageTitle = 'イベント情報';
 const pageDescription = '出雲市の子育て関連イベント情報を掲載しています。';
+
+// ビュー切り替えのURL生成
+const getViewUrl = (view: string) => {
+  const params = new URLSearchParams();
+  if (area) params.set('area', area);
+  if (view === 'calendar') {
+    params.set('view', 'calendar');
+    params.set('year', currentYear.toString());
+    params.set('month', (currentMonth + 1).toString());
+  }
+  const queryString = params.toString();
+  return `/events${queryString ? `?${queryString}` : ''}`;
+};
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription}>
@@ -58,79 +88,135 @@ const pageDescription = '出雲市の子育て関連イベント情報を掲載�
           </select>
         </div>
 
-        <div class="flex gap-4 items-center">
-          <label class="inline-flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              name="past"
-              value="true"
-              checked={showPast}
-              class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-            />
-            <span class="text-sm text-gray-700">過去のイベントも表示</span>
-          </label>
+        {viewMode === 'list' && (
+          <div class="flex gap-4 items-center">
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="past"
+                value="true"
+                checked={showPast}
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span class="text-sm text-gray-700">過去のイベントも表示</span>
+            </label>
+          </div>
+        )}
 
-          <Button type="submit" size="sm">絞り込む</Button>
-        </div>
+        {viewMode === 'calendar' && (
+          <>
+            <input type="hidden" name="view" value="calendar" />
+            <input type="hidden" name="year" value={currentYear} />
+            <input type="hidden" name="month" value={currentMonth + 1} />
+          </>
+        )}
+
+        <Button type="submit" size="sm">絞り込む</Button>
       </form>
     </div>
 
-    <!-- タブ -->
-    <div class="flex gap-4 mb-6">
-      <a
-        href={`/events${area ? `?area=${area}` : ''}`}
-        class={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-          !showPast
-            ? 'bg-primary-600 text-white'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-        }`}
-      >
-        これからのイベント
-      </a>
-      <a
-        href={`/events?past=true${area ? `&area=${area}` : ''}`}
-        class={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-          showPast
-            ? 'bg-primary-600 text-white'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-        }`}
-      >
-        過去のイベント
-      </a>
+    <!-- 表示切り替えタブ -->
+    <div class="flex flex-wrap gap-4 mb-6">
+      <div class="flex gap-2 bg-gray-100 rounded-lg p-1">
+        <a
+          href={getViewUrl('list')}
+          class:list={[
+            'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
+            viewMode === 'list'
+              ? 'bg-white text-primary-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900',
+          ]}
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+          </svg>
+          リスト
+        </a>
+        <a
+          href={getViewUrl('calendar')}
+          class:list={[
+            'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
+            viewMode === 'calendar'
+              ? 'bg-white text-primary-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900',
+          ]}
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          カレンダー
+        </a>
+      </div>
+
+      {viewMode === 'list' && (
+        <div class="flex gap-2">
+          <a
+            href={`/events${area ? `?area=${area}` : ''}`}
+            class={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              !showPast
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            これからのイベント
+          </a>
+          <a
+            href={`/events?past=true${area ? `&area=${area}` : ''}`}
+            class={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              showPast
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            過去のイベント
+          </a>
+        </div>
+      )}
     </div>
 
-    <!-- 検索結果 -->
-    <p class="text-gray-600 mb-6">
-      <span class="font-bold text-primary-600">{sortedEvents.length}</span>件のイベント
-    </p>
-
-    {sortedEvents.length > 0 ? (
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {sortedEvents.map((event) => (
-          <EventCard
-            slug={event.data.slug}
-            title={event.data.title}
-            summary={event.data.summary}
-            area={event.data.area}
-            startAt={event.data.startAt}
-            endAt={event.data.endAt}
-            venue={event.data.venue}
-            images={event.data.images}
-            isFeatured={event.data.isFeatured}
-          />
-        ))}
-      </div>
+    {viewMode === 'calendar' ? (
+      <!-- カレンダー表示 -->
+      <EventCalendar
+        events={calendarEvents}
+        currentYear={currentYear}
+        currentMonth={currentMonth}
+      />
     ) : (
-      <div class="text-center py-16 bg-white rounded-xl">
-        <p class="text-gray-500 mb-4">
-          {showPast ? '過去のイベントはありません' : 'これからのイベントはありません'}
+      <!-- リスト表示 -->
+      <>
+        <p class="text-gray-600 mb-6">
+          <span class="font-bold text-primary-600">{sortedEvents.length}</span>件のイベント
         </p>
-        {!showPast && (
-          <Button href="/events?past=true" variant="outline">
-            過去のイベントを見る
-          </Button>
+
+        {sortedEvents.length > 0 ? (
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {sortedEvents.map((event) => (
+              <EventCard
+                slug={event.data.slug}
+                title={event.data.title}
+                summary={event.data.summary}
+                area={event.data.area}
+                startAt={event.data.startAt}
+                endAt={event.data.endAt}
+                venue={event.data.venue}
+                images={event.data.images}
+                isFeatured={event.data.isFeatured}
+              />
+            ))}
+          </div>
+        ) : (
+          <div class="text-center py-16 bg-white rounded-xl">
+            <p class="text-gray-500 mb-4">
+              {showPast ? '過去のイベントはありません' : 'これからのイベントはありません'}
+            </p>
+            {!showPast && (
+              <Button href="/events?past=true" variant="outline">
+                過去のイベントを見る
+              </Button>
+            )}
+          </div>
         )}
-      </div>
+      </>
     )}
   </div>
 </BaseLayout>

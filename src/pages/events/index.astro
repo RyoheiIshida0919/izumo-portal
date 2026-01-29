@@ -3,65 +3,40 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumb from '../../components/common/Breadcrumb.astro';
 import EventCard from '../../components/cards/EventCard.astro';
-import EventCalendar from '../../components/events/EventCalendar.astro';
 import Button from '../../components/common/Button.astro';
 import { areas } from '../../content/_meta/areas';
 import { isUpcoming } from '../../lib/utils';
 
 const allEvents = await getCollection('events');
 
-// URLパラメータ取得
-const url = new URL(Astro.request.url);
-const area = url.searchParams.get('area') || '';
-const showPast = url.searchParams.get('past') === 'true';
-const viewMode = url.searchParams.get('view') || 'list'; // 'list' or 'calendar'
-
-// カレンダー表示用の年月
-const today = new Date();
-const yearParam = url.searchParams.get('year');
-const monthParam = url.searchParams.get('month');
-const currentYear = yearParam ? parseInt(yearParam, 10) : today.getFullYear();
-const currentMonth = monthParam ? parseInt(monthParam, 10) - 1 : today.getMonth();
-
-// フィルタリング
-let filteredEvents = allEvents;
-
-if (area) {
-  filteredEvents = filteredEvents.filter((e) => e.data.area === area);
-}
-
-// 開催日でソート
-const sortedEvents = filteredEvents
-  .filter((e) => (showPast ? !isUpcoming(e.data.startAt) : isUpcoming(e.data.startAt)))
-  .sort((a, b) => {
-    const dateA = new Date(a.data.startAt).getTime();
-    const dateB = new Date(b.data.startAt).getTime();
-    return showPast ? dateB - dateA : dateA - dateB;
-  });
-
-// カレンダー用のイベントデータ
-const calendarEvents = filteredEvents.map((e) => ({
+// すべてのイベントデータをJSON形式で渡す
+const eventsData = allEvents.map((e) => ({
   slug: e.data.slug,
   title: e.data.title,
+  summary: e.data.summary,
+  area: e.data.area,
   startAt: e.data.startAt,
   endAt: e.data.endAt,
+  venue: e.data.venue,
+  images: e.data.images,
+  isFeatured: e.data.isFeatured,
 }));
+
+// これからのイベント（リスト表示用）
+const upcomingEvents = allEvents
+  .filter((e) => isUpcoming(e.data.startAt))
+  .sort((a, b) => new Date(a.data.startAt).getTime() - new Date(b.data.startAt).getTime());
+
+// 過去のイベント
+const pastEvents = allEvents
+  .filter((e) => !isUpcoming(e.data.startAt))
+  .sort((a, b) => new Date(b.data.startAt).getTime() - new Date(a.data.startAt).getTime());
 
 const pageTitle = 'イベント情報';
 const pageDescription = '出雲市の子育て関連イベント情報を掲載しています。';
 
-// ビュー切り替えのURL生成
-const getViewUrl = (view: string) => {
-  const params = new URLSearchParams();
-  if (area) params.set('area', area);
-  if (view === 'calendar') {
-    params.set('view', 'calendar');
-    params.set('year', currentYear.toString());
-    params.set('month', (currentMonth + 1).toString());
-  }
-  const queryString = params.toString();
-  return `/events${queryString ? `?${queryString}` : ''}`;
-};
+// エリア情報をJSONで渡す
+const areasData = areas.map((a) => ({ id: a.id, name: a.name }));
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription}>
@@ -72,151 +47,452 @@ const getViewUrl = (view: string) => {
 
     <!-- フィルタ -->
     <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
-      <form method="get" class="flex flex-wrap gap-4 items-end">
+      <div class="flex flex-wrap gap-4 items-end">
         <div class="flex-1 min-w-48">
           <label class="block text-sm font-medium text-gray-700 mb-1">エリア</label>
           <select
-            name="area"
+            id="area-filter"
             class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none"
           >
             <option value="">すべてのエリア</option>
             {areas.map((a) => (
-              <option value={a.id} selected={a.id === area}>
-                {a.name}
-              </option>
+              <option value={a.id}>{a.name}</option>
             ))}
           </select>
         </div>
 
-        {viewMode === 'list' && (
-          <div class="flex gap-4 items-center">
-            <label class="inline-flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                name="past"
-                value="true"
-                checked={showPast}
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span class="text-sm text-gray-700">過去のイベントも表示</span>
-            </label>
-          </div>
-        )}
-
-        {viewMode === 'calendar' && (
-          <>
-            <input type="hidden" name="view" value="calendar" />
-            <input type="hidden" name="year" value={currentYear} />
-            <input type="hidden" name="month" value={currentMonth + 1} />
-          </>
-        )}
-
-        <Button type="submit" size="sm">絞り込む</Button>
-      </form>
+        <div id="past-checkbox-container" class="flex gap-4 items-center">
+          <label class="inline-flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              id="show-past"
+              class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span class="text-sm text-gray-700">過去のイベントも表示</span>
+          </label>
+        </div>
+      </div>
     </div>
 
     <!-- 表示切り替えタブ -->
     <div class="flex flex-wrap gap-4 mb-6">
       <div class="flex gap-2 bg-gray-100 rounded-lg p-1">
-        <a
-          href={getViewUrl('list')}
-          class:list={[
-            'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
-            viewMode === 'list'
-              ? 'bg-white text-primary-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900',
-          ]}
+        <button
+          id="view-list"
+          type="button"
+          class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-primary-600 shadow-sm"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
           リスト
-        </a>
-        <a
-          href={getViewUrl('calendar')}
-          class:list={[
-            'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
-            viewMode === 'calendar'
-              ? 'bg-white text-primary-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900',
-          ]}
+        </button>
+        <button
+          id="view-calendar"
+          type="button"
+          class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-gray-900"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           カレンダー
-        </a>
+        </button>
       </div>
 
-      {viewMode === 'list' && (
-        <div class="flex gap-2">
-          <a
-            href={`/events${area ? `?area=${area}` : ''}`}
-            class={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              !showPast
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            これからのイベント
-          </a>
-          <a
-            href={`/events?past=true${area ? `&area=${area}` : ''}`}
-            class={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              showPast
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            過去のイベント
-          </a>
-        </div>
-      )}
+      <div id="time-filter-tabs" class="flex gap-2">
+        <button
+          id="tab-upcoming"
+          type="button"
+          class="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-primary-600 text-white"
+        >
+          これからのイベント
+        </button>
+        <button
+          id="tab-past"
+          type="button"
+          class="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
+        >
+          過去のイベント
+        </button>
+      </div>
     </div>
 
-    {viewMode === 'calendar' ? (
-      <!-- カレンダー表示 -->
-      <EventCalendar
-        events={calendarEvents}
-        currentYear={currentYear}
-        currentMonth={currentMonth}
-      />
-    ) : (
-      <!-- リスト表示 -->
-      <>
-        <p class="text-gray-600 mb-6">
-          <span class="font-bold text-primary-600">{sortedEvents.length}</span>件のイベント
-        </p>
+    <!-- リスト表示 -->
+    <div id="list-view">
+      <p class="text-gray-600 mb-6">
+        <span id="event-count" class="font-bold text-primary-600">{upcomingEvents.length}</span>件のイベント
+      </p>
 
-        {sortedEvents.length > 0 ? (
+      <!-- これからのイベント -->
+      <div id="upcoming-events-container">
+        {upcomingEvents.length > 0 ? (
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {sortedEvents.map((event) => (
-              <EventCard
-                slug={event.data.slug}
-                title={event.data.title}
-                summary={event.data.summary}
-                area={event.data.area}
-                startAt={event.data.startAt}
-                endAt={event.data.endAt}
-                venue={event.data.venue}
-                images={event.data.images}
-                isFeatured={event.data.isFeatured}
-              />
+            {upcomingEvents.map((event) => (
+              <div class="event-card-wrapper" data-area={event.data.area}>
+                <EventCard
+                  slug={event.data.slug}
+                  title={event.data.title}
+                  summary={event.data.summary}
+                  area={event.data.area}
+                  startAt={event.data.startAt}
+                  endAt={event.data.endAt}
+                  venue={event.data.venue}
+                  images={event.data.images}
+                  isFeatured={event.data.isFeatured}
+                />
+              </div>
             ))}
           </div>
         ) : (
           <div class="text-center py-16 bg-white rounded-xl">
-            <p class="text-gray-500 mb-4">
-              {showPast ? '過去のイベントはありません' : 'これからのイベントはありません'}
-            </p>
-            {!showPast && (
-              <Button href="/events?past=true" variant="outline">
-                過去のイベントを見る
-              </Button>
-            )}
+            <p class="text-gray-500 mb-4">これからのイベントはありません</p>
           </div>
         )}
-      </>
-    )}
+      </div>
+
+      <!-- 過去のイベント -->
+      <div id="past-events-container" class="hidden">
+        {pastEvents.length > 0 ? (
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {pastEvents.map((event) => (
+              <div class="event-card-wrapper" data-area={event.data.area}>
+                <EventCard
+                  slug={event.data.slug}
+                  title={event.data.title}
+                  summary={event.data.summary}
+                  area={event.data.area}
+                  startAt={event.data.startAt}
+                  endAt={event.data.endAt}
+                  venue={event.data.venue}
+                  images={event.data.images}
+                  isFeatured={event.data.isFeatured}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div class="text-center py-16 bg-white rounded-xl">
+            <p class="text-gray-500 mb-4">過去のイベントはありません</p>
+          </div>
+        )}
+      </div>
+
+      <!-- フィルタ結果なし -->
+      <div id="no-results" class="hidden text-center py-16 bg-white rounded-xl">
+        <p class="text-gray-500">該当するイベントがありません</p>
+      </div>
+    </div>
+
+    <!-- カレンダー表示 -->
+    <div id="calendar-view" class="hidden">
+      <div class="bg-white rounded-xl shadow-sm p-4 lg:p-6">
+        <!-- カレンダーヘッダー -->
+        <div class="flex items-center justify-between mb-4">
+          <button
+            id="prev-month"
+            type="button"
+            class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="前月"
+          >
+            <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h2 id="calendar-title" class="text-xl font-bold text-gray-900"></h2>
+          <button
+            id="next-month"
+            type="button"
+            class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="次月"
+          >
+            <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- 曜日ヘッダー -->
+        <div class="grid grid-cols-7 mb-2">
+          <div class="text-center text-sm font-medium py-2 text-red-500">日</div>
+          <div class="text-center text-sm font-medium py-2 text-gray-600">月</div>
+          <div class="text-center text-sm font-medium py-2 text-gray-600">火</div>
+          <div class="text-center text-sm font-medium py-2 text-gray-600">水</div>
+          <div class="text-center text-sm font-medium py-2 text-gray-600">木</div>
+          <div class="text-center text-sm font-medium py-2 text-gray-600">金</div>
+          <div class="text-center text-sm font-medium py-2 text-blue-500">土</div>
+        </div>
+
+        <!-- カレンダー本体 -->
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+
+        <!-- 凡例 -->
+        <div class="mt-4 flex items-center gap-4 text-sm text-gray-600">
+          <div class="flex items-center gap-1">
+            <span class="w-3 h-3 bg-primary-100 rounded"></span>
+            <span>イベントあり</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="w-3 h-3 bg-primary-50 border border-primary-300 rounded"></span>
+            <span>今日</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </BaseLayout>
+
+<script is:inline define:vars={{ eventsDataJson: JSON.stringify(eventsData) }}>
+  window.eventsData = JSON.parse(eventsDataJson);
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // 要素の取得
+    const viewListBtn = document.getElementById('view-list');
+    const viewCalendarBtn = document.getElementById('view-calendar');
+    const listView = document.getElementById('list-view');
+    const calendarView = document.getElementById('calendar-view');
+    const timeFilterTabs = document.getElementById('time-filter-tabs');
+    const pastCheckboxContainer = document.getElementById('past-checkbox-container');
+    const tabUpcoming = document.getElementById('tab-upcoming');
+    const tabPast = document.getElementById('tab-past');
+    const upcomingContainer = document.getElementById('upcoming-events-container');
+    const pastContainer = document.getElementById('past-events-container');
+    const noResults = document.getElementById('no-results');
+    const eventCount = document.getElementById('event-count');
+    const areaFilter = document.getElementById('area-filter') as HTMLSelectElement;
+    const showPastCheckbox = document.getElementById('show-past') as HTMLInputElement;
+    const calendarGrid = document.getElementById('calendar-grid');
+    const calendarTitle = document.getElementById('calendar-title');
+    const prevMonthBtn = document.getElementById('prev-month');
+    const nextMonthBtn = document.getElementById('next-month');
+
+    // 状態管理
+    let currentView = 'list'; // 'list' or 'calendar'
+    let showPast = false;
+    let selectedArea = '';
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
+
+    // イベントデータ
+    const events = (window as any).eventsData || [];
+
+    // ユーティリティ関数
+    const isUpcoming = (dateStr: string) => {
+      const eventDate = new Date(dateStr);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return eventDate >= today;
+    };
+
+    // リスト表示の更新
+    const updateListView = () => {
+      const upcomingCards = upcomingContainer?.querySelectorAll('.event-card-wrapper') || [];
+      const pastCards = pastContainer?.querySelectorAll('.event-card-wrapper') || [];
+
+      let visibleUpcoming = 0;
+      let visiblePast = 0;
+
+      // これからのイベントのフィルタリング
+      upcomingCards.forEach((card) => {
+        const area = (card as HTMLElement).dataset.area;
+        const show = !selectedArea || area === selectedArea;
+        (card as HTMLElement).style.display = show ? '' : 'none';
+        if (show) visibleUpcoming++;
+      });
+
+      // 過去のイベントのフィルタリング
+      pastCards.forEach((card) => {
+        const area = (card as HTMLElement).dataset.area;
+        const show = !selectedArea || area === selectedArea;
+        (card as HTMLElement).style.display = show ? '' : 'none';
+        if (show) visiblePast++;
+      });
+
+      // コンテナの表示切り替え
+      if (showPast) {
+        upcomingContainer?.classList.add('hidden');
+        pastContainer?.classList.remove('hidden');
+        if (eventCount) eventCount.textContent = visiblePast.toString();
+
+        if (visiblePast === 0) {
+          pastContainer?.classList.add('hidden');
+          noResults?.classList.remove('hidden');
+        } else {
+          noResults?.classList.add('hidden');
+        }
+      } else {
+        upcomingContainer?.classList.remove('hidden');
+        pastContainer?.classList.add('hidden');
+        if (eventCount) eventCount.textContent = visibleUpcoming.toString();
+
+        if (visibleUpcoming === 0) {
+          upcomingContainer?.classList.add('hidden');
+          noResults?.classList.remove('hidden');
+        } else {
+          noResults?.classList.add('hidden');
+        }
+      }
+    };
+
+    // カレンダーの描画
+    const renderCalendar = () => {
+      if (!calendarGrid || !calendarTitle) return;
+
+      const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+      calendarTitle.textContent = `${currentYear}年 ${monthNames[currentMonth]}`;
+
+      // 月の日数と最初の曜日を計算
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+
+      // フィルタされたイベントを日付ごとにグループ化
+      const eventsByDay: Record<number, any[]> = {};
+      events.forEach((event: any) => {
+        if (selectedArea && event.area !== selectedArea) return;
+
+        const startDate = new Date(event.startAt);
+        if (startDate.getFullYear() === currentYear && startDate.getMonth() === currentMonth) {
+          const day = startDate.getDate();
+          if (!eventsByDay[day]) eventsByDay[day] = [];
+          eventsByDay[day].push(event);
+        }
+      });
+
+      // 今日の日付
+      const today = new Date();
+      const isToday = (day: number) =>
+        today.getFullYear() === currentYear &&
+        today.getMonth() === currentMonth &&
+        today.getDate() === day;
+
+      // カレンダーグリッドを生成
+      let html = '';
+
+      // 最初の週の空白
+      for (let i = 0; i < firstDay; i++) {
+        html += '<div class="min-h-[80px] lg:min-h-[100px] p-1 border rounded-lg bg-gray-50 border-transparent"></div>';
+      }
+
+      // 日付セル
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayOfWeek = (firstDay + day - 1) % 7;
+        const dayEvents = eventsByDay[day] || [];
+        const todayClass = isToday(day) ? 'bg-primary-50 border-primary-300' : 'border-gray-200';
+        const textColorClass = dayOfWeek === 0 ? 'text-red-500' : dayOfWeek === 6 ? 'text-blue-500' : 'text-gray-700';
+        const todayTextClass = isToday(day) ? 'text-primary-600 font-bold' : '';
+
+        html += `<div class="min-h-[80px] lg:min-h-[100px] p-1 border rounded-lg ${todayClass}">`;
+        html += `<div class="text-sm font-medium mb-1 ${textColorClass} ${todayTextClass}">${day}</div>`;
+        html += '<div class="space-y-1">';
+
+        dayEvents.slice(0, 2).forEach((event: any) => {
+          html += `<a href="/events/${event.slug}" class="block text-xs bg-primary-100 text-primary-700 rounded px-1 py-0.5 truncate hover:bg-primary-200 transition-colors" title="${event.title}">${event.title}</a>`;
+        });
+
+        if (dayEvents.length > 2) {
+          html += `<span class="block text-xs text-gray-500 px-1">+${dayEvents.length - 2}件</span>`;
+        }
+
+        html += '</div></div>';
+      }
+
+      // 最後の週の空白
+      const totalCells = firstDay + daysInMonth;
+      const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+      for (let i = 0; i < remainingCells; i++) {
+        html += '<div class="min-h-[80px] lg:min-h-[100px] p-1 border rounded-lg bg-gray-50 border-transparent"></div>';
+      }
+
+      calendarGrid.innerHTML = html;
+    };
+
+    // ビューの切り替え
+    const switchView = (view: string) => {
+      currentView = view;
+
+      if (view === 'list') {
+        viewListBtn?.classList.add('bg-white', 'text-primary-600', 'shadow-sm');
+        viewListBtn?.classList.remove('text-gray-600', 'hover:text-gray-900');
+        viewCalendarBtn?.classList.remove('bg-white', 'text-primary-600', 'shadow-sm');
+        viewCalendarBtn?.classList.add('text-gray-600', 'hover:text-gray-900');
+
+        listView?.classList.remove('hidden');
+        calendarView?.classList.add('hidden');
+        timeFilterTabs?.classList.remove('hidden');
+        pastCheckboxContainer?.classList.remove('hidden');
+      } else {
+        viewCalendarBtn?.classList.add('bg-white', 'text-primary-600', 'shadow-sm');
+        viewCalendarBtn?.classList.remove('text-gray-600', 'hover:text-gray-900');
+        viewListBtn?.classList.remove('bg-white', 'text-primary-600', 'shadow-sm');
+        viewListBtn?.classList.add('text-gray-600', 'hover:text-gray-900');
+
+        listView?.classList.add('hidden');
+        calendarView?.classList.remove('hidden');
+        timeFilterTabs?.classList.add('hidden');
+        pastCheckboxContainer?.classList.add('hidden');
+
+        renderCalendar();
+      }
+    };
+
+    // タブの切り替え
+    const switchTab = (tab: string) => {
+      showPast = tab === 'past';
+
+      if (showPast) {
+        tabPast?.classList.add('bg-primary-600', 'text-white');
+        tabPast?.classList.remove('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+        tabUpcoming?.classList.remove('bg-primary-600', 'text-white');
+        tabUpcoming?.classList.add('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+      } else {
+        tabUpcoming?.classList.add('bg-primary-600', 'text-white');
+        tabUpcoming?.classList.remove('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+        tabPast?.classList.remove('bg-primary-600', 'text-white');
+        tabPast?.classList.add('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+      }
+
+      updateListView();
+    };
+
+    // イベントリスナー
+    viewListBtn?.addEventListener('click', () => switchView('list'));
+    viewCalendarBtn?.addEventListener('click', () => switchView('calendar'));
+    tabUpcoming?.addEventListener('click', () => switchTab('upcoming'));
+    tabPast?.addEventListener('click', () => switchTab('past'));
+
+    areaFilter?.addEventListener('change', () => {
+      selectedArea = areaFilter.value;
+      if (currentView === 'list') {
+        updateListView();
+      } else {
+        renderCalendar();
+      }
+    });
+
+    showPastCheckbox?.addEventListener('change', () => {
+      switchTab(showPastCheckbox.checked ? 'past' : 'upcoming');
+    });
+
+    prevMonthBtn?.addEventListener('click', () => {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      renderCalendar();
+    });
+
+    nextMonthBtn?.addEventListener('click', () => {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar();
+    });
+
+    // 初期化
+    updateListView();
+  });
+</script>

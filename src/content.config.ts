@@ -52,6 +52,19 @@ const eventSchema = z.object({
   createdAt: z.string(),
 });
 
+const columnSchema = z.object({
+  title: z.string(),
+  slug: z.string(),
+  category: z.string(), // 子育てコラム、お出かけ情報、季節の行事など
+  tags: z.array(z.string()).default([]),
+  summary: z.string(),
+  thumbnail: imageSchema.optional(),
+  author: z.string().optional(),
+  isFeatured: z.boolean().default(false),
+  publishedAt: z.string(),
+  updatedAt: z.string(),
+});
+
 const services = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/services' }),
   schema: serviceSchema,
@@ -62,4 +75,9 @@ const events = defineCollection({
   schema: eventSchema,
 });
 
-export const collections = { services, events };
+const columns = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/columns' }),
+  schema: columnSchema,
+});
+
+export const collections = { services, events, columns };

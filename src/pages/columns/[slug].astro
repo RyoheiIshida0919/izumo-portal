@@ -1,0 +1,167 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import Tag from '../../components/common/Tag.astro';
+import ColumnCard from '../../components/cards/ColumnCard.astro';
+import { formatDate } from '../../lib/utils';
+import { DUMMY_IMAGE_URL } from '../../lib/constants';
+
+export async function getStaticPaths() {
+  const columns = await getCollection('columns');
+  return columns.map((column) => ({
+    params: { slug: column.data.slug },
+    props: { column },
+  }));
+}
+
+const { column } = Astro.props;
+const { data } = column;
+const { Content } = await render(column);
+
+const categoryLabels: Record<string, string> = {
+  parenting: '子育てコラム',
+  outing: 'お出かけ情報',
+  seasonal: '季節の行事',
+  health: '健康・発育',
+  food: '食事・レシピ',
+  other: 'その他',
+};
+
+const categoryLabel = categoryLabels[data.category] || data.category;
+
+// 関連コラム（同じカテゴリまたは同じタグを持つもの）
+const allColumns = await getCollection('columns');
+const relatedColumns = allColumns
+  .filter(
+    (c) =>
+      c.data.slug !== data.slug &&
+      (c.data.category === data.category ||
+        c.data.tags.some((t) => data.tags.includes(t)))
+  )
+  .sort((a, b) => new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime())
+  .slice(0, 3);
+
+const mainImage = data.thumbnail?.url || DUMMY_IMAGE_URL;
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.summary}
+  ogImage={mainImage}
+>
+  <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb
+      items={[
+        { label: 'コラム', href: '/columns' },
+        { label: data.title },
+      ]}
+    />
+
+    <article class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <!-- メイン画像 -->
+      {data.thumbnail && (
+        <div class="aspect-[16/9] overflow-hidden">
+          <img
+            src={data.thumbnail.url}
+            alt={data.thumbnail.alt || data.title}
+            class="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      <div class="p-6 lg:p-8">
+        <!-- カテゴリ・日付 -->
+        <div class="flex flex-wrap items-center gap-4 mb-4">
+          <a
+            href={`/columns?category=${data.category}`}
+            class="inline-block"
+          >
+            <Tag label={categoryLabel} variant="secondary" size="md" />
+          </a>
+          <time class="text-sm text-gray-500" datetime={data.publishedAt}>
+            {formatDate(data.publishedAt)}
+          </time>
+          {data.author && (
+            <span class="flex items-center gap-1 text-sm text-gray-500">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+              {data.author}
+            </span>
+          )}
+        </div>
+
+        <!-- タイトル -->
+        <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">{data.title}</h1>
+
+        <!-- リード文 -->
+        <p class="text-lg text-gray-600 mb-8 pb-8 border-b">{data.summary}</p>
+
+        <!-- 本文 -->
+        <div class="prose prose-gray prose-lg max-w-none">
+          <Content />
+        </div>
+
+        <!-- タグ -->
+        {data.tags.length > 0 && (
+          <div class="mt-8 pt-6 border-t">
+            <h2 class="text-sm font-medium text-gray-500 mb-3">タグ</h2>
+            <div class="flex flex-wrap gap-2">
+              {data.tags.map((tag) => (
+                <span class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <!-- 更新日 -->
+        <div class="mt-6 text-sm text-gray-500">
+          <p>最終更新: {formatDate(data.updatedAt)}</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- 関連コラム -->
+    {relatedColumns.length > 0 && (
+      <section class="mt-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">関連するコラム</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {relatedColumns.map((c) => (
+            <ColumnCard
+              slug={c.data.slug}
+              title={c.data.title}
+              summary={c.data.summary}
+              category={c.data.category}
+              tags={c.data.tags}
+              thumbnail={c.data.thumbnail}
+              author={c.data.author}
+              publishedAt={c.data.publishedAt}
+              isFeatured={c.data.isFeatured}
+            />
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- コラム一覧へ戻る -->
+    <div class="mt-8 text-center">
+      <a
+        href="/columns"
+        class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
+      >
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        コラム一覧へ戻る
+      </a>
+    </div>
+  </div>
+</BaseLayout>

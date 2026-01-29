@@ -1,0 +1,109 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumb from '../components/common/Breadcrumb.astro';
+import { SITE_NAME } from '../lib/constants';
+
+const pageTitle = '使い方';
+const pageDescription = `${SITE_NAME}の使い方をご紹介します。サービスの検索方法やイベント情報の見方など、サイトの便利な機能を解説します。`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb items={[{ label: pageTitle }]} />
+
+    <article class="bg-white rounded-xl shadow-sm p-6 lg:p-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
+
+      <div class="prose prose-gray max-w-none">
+        <p class="lead text-lg text-gray-600 mb-8">
+          {SITE_NAME}は、出雲市で子育てをするご家庭のための情報ポータルサイトです。
+          このページでは、サイトの便利な使い方をご紹介します。
+        </p>
+
+        <h2>サービス・施設を探す</h2>
+        <p>
+          トップページの検索ボックスから、キーワードを入力してサービスや施設を検索できます。
+          「カフェ」「公園」「小児科」など、探したい施設の種類を入力してみてください。
+        </p>
+
+        <h3>カテゴリから探す</h3>
+        <p>
+          <a href="/categories">カテゴリページ</a>では、以下のカテゴリから施設を探せます。
+        </p>
+        <ul>
+          <li><strong>グルメ</strong> - 子連れで行けるカフェ・レストラン</li>
+          <li><strong>習い事・教室</strong> - 子ども向けの習い事や教室</li>
+          <li><strong>子育て支援</strong> - 一時預かり、相談窓口など</li>
+          <li><strong>遊び場</strong> - 公園、室内遊び場など</li>
+          <li><strong>買い物</strong> - ベビー用品、子ども服のお店</li>
+          <li><strong>医療・健康</strong> - 小児科、歯科など</li>
+        </ul>
+
+        <h3>エリアから探す</h3>
+        <p>
+          <a href="/areas">エリアページ</a>では、お住まいの地域や外出先の近くにある施設を探せます。
+          出雲市内の各エリア（出雲、平田、大社、斐川など）から絞り込んで検索できます。
+        </p>
+
+        <h3>絞り込み検索</h3>
+        <p>
+          <a href="/services">サービス検索ページ</a>では、以下の条件で絞り込み検索ができます。
+        </p>
+        <ul>
+          <li><strong>カテゴリ</strong> - サービスの種類で絞り込み</li>
+          <li><strong>エリア</strong> - 地域で絞り込み</li>
+          <li><strong>対象年齢</strong> - お子さまの年齢に合った施設を検索</li>
+          <li><strong>キーワード</strong> - フリーワードで検索</li>
+        </ul>
+
+        <h2>イベント情報を見る</h2>
+        <p>
+          <a href="/events">イベントページ</a>では、出雲市内で開催される子育て関連のイベント情報を掲載しています。
+        </p>
+        <ul>
+          <li>開催日時や場所を確認できます</li>
+          <li>参加費や対象年齢も記載しています</li>
+          <li>近日開催のイベントはトップページにも表示されます</li>
+        </ul>
+
+        <h2>施設の詳細を見る</h2>
+        <p>
+          各施設のカードをクリックすると、詳細ページで以下の情報を確認できます。
+        </p>
+        <ul>
+          <li>施設の説明・特徴</li>
+          <li>住所・アクセス方法</li>
+          <li>営業時間・定休日</li>
+          <li>電話番号・公式サイト</li>
+          <li>料金情報</li>
+          <li>設備情報（駐車場、授乳室、おむつ替えスペースなど）</li>
+        </ul>
+
+        <h2>スマートフォンでの利用</h2>
+        <p>
+          当サイトはスマートフォンでも快適にご利用いただけます。
+          外出先でも手軽に近くの施設を検索できます。
+        </p>
+        <ul>
+          <li>画面右上のメニューボタンからナビゲーションを開けます</li>
+          <li>ホーム画面に追加すると、アプリのように使えます</li>
+        </ul>
+
+        <h2>情報の更新について</h2>
+        <p>
+          掲載情報は随時更新していますが、営業時間や料金は変更される場合があります。
+          お出かけ前には、各施設の公式サイトや電話で最新情報をご確認ください。
+        </p>
+
+        <h2>お問い合わせ</h2>
+        <p>
+          サイトの使い方でご不明な点がございましたら、<a href="/contact">お問い合わせページ</a>よりお気軽にご連絡ください。
+        </p>
+        <p>
+          また、掲載情報の誤りや新しい施設の情報提供も歓迎しております。
+          <a href="/media">掲載希望ページ</a>からお知らせください。
+        </p>
+      </div>
+    </article>
+  </div>
+</BaseLayout>

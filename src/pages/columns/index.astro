@@ -1,0 +1,144 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import ColumnCard from '../../components/cards/ColumnCard.astro';
+import { SITE_NAME } from '../../lib/constants';
+
+const pageTitle = 'コラム';
+const pageDescription = `${SITE_NAME}のコラム一覧です。子育てに役立つ情報やお出かけ情報、季節の行事など、出雲市での子育てに役立つ記事をお届けします。`;
+
+const allColumns = await getCollection('columns');
+
+// 公開日の新しい順にソート
+const sortedColumns = allColumns.sort(
+  (a, b) => new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime()
+);
+
+// 注目コラム
+const featuredColumns = sortedColumns.filter((c) => c.data.isFeatured);
+
+// カテゴリ一覧
+const categoryLabels: Record<string, string> = {
+  parenting: '子育てコラム',
+  outing: 'お出かけ情報',
+  seasonal: '季節の行事',
+  health: '健康・発育',
+  food: '食事・レシピ',
+  other: 'その他',
+};
+
+// URLパラメータでカテゴリフィルタ
+const url = Astro.url;
+const selectedCategory = url.searchParams.get('category') || '';
+
+const filteredColumns = selectedCategory
+  ? sortedColumns.filter((c) => c.data.category === selectedCategory)
+  : sortedColumns;
+
+// カテゴリごとの件数
+const categoryCounts = Object.keys(categoryLabels).map((cat) => ({
+  id: cat,
+  label: categoryLabels[cat],
+  count: sortedColumns.filter((c) => c.data.category === cat).length,
+})).filter((c) => c.count > 0);
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumb items={[{ label: pageTitle }]} />
+
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-4">{pageTitle}</h1>
+      <p class="text-gray-600">
+        子育てに役立つコラムをお届けします。お出かけ情報や季節の行事、子育てのヒントなど、出雲市での子育てライフをサポートする記事を掲載しています。
+      </p>
+    </div>
+
+    <!-- カテゴリフィルタ -->
+    <div class="mb-8">
+      <div class="flex flex-wrap gap-2">
+        <a
+          href="/columns"
+          class:list={[
+            'px-4 py-2 rounded-full text-sm font-medium transition-colors',
+            !selectedCategory
+              ? 'bg-primary-500 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+          ]}
+        >
+          すべて ({sortedColumns.length})
+        </a>
+        {
+          categoryCounts.map((cat) => (
+            <a
+              href={`/columns?category=${cat.id}`}
+              class:list={[
+                'px-4 py-2 rounded-full text-sm font-medium transition-colors',
+                selectedCategory === cat.id
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+              ]}
+            >
+              {cat.label} ({cat.count})
+            </a>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- 注目コラム（フィルタなしの場合のみ表示） -->
+    {
+      !selectedCategory && featuredColumns.length > 0 && (
+        <section class="mb-12">
+          <h2 class="text-xl font-bold text-gray-900 mb-6">注目のコラム</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredColumns.slice(0, 3).map((column) => (
+              <ColumnCard
+                slug={column.data.slug}
+                title={column.data.title}
+                summary={column.data.summary}
+                category={column.data.category}
+                tags={column.data.tags}
+                thumbnail={column.data.thumbnail}
+                author={column.data.author}
+                publishedAt={column.data.publishedAt}
+                isFeatured={column.data.isFeatured}
+              />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <!-- コラム一覧 -->
+    <section>
+      <h2 class="text-xl font-bold text-gray-900 mb-6">
+        {selectedCategory ? categoryLabels[selectedCategory] : '最新のコラム'}
+      </h2>
+      {
+        filteredColumns.length > 0 ? (
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredColumns.map((column) => (
+              <ColumnCard
+                slug={column.data.slug}
+                title={column.data.title}
+                summary={column.data.summary}
+                category={column.data.category}
+                tags={column.data.tags}
+                thumbnail={column.data.thumbnail}
+                author={column.data.author}
+                publishedAt={column.data.publishedAt}
+                isFeatured={column.data.isFeatured}
+              />
+            ))}
+          </div>
+        ) : (
+          <div class="text-center py-12 bg-gray-50 rounded-xl">
+            <p class="text-gray-500">このカテゴリのコラムはまだありません。</p>
+          </div>
+        )
+      }
+    </section>
+  </div>
+</BaseLayout>
